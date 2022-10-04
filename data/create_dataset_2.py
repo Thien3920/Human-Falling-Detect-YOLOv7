@@ -15,20 +15,21 @@ import pandas as pd
 import numpy as np
 
 
-
-
+import sys
+sys.path.append('/media/ngocthien/DATA/DO_AN_TOT_NGHIEP/TRAIN')
 
 from yolov7.pose import yolov7_pose
 from yolov7.utils.plots import plot_skeleton_kpts
 
-model = yolov7_pose('/media/ngocthien/DATA/DO_AN_TOT_NGHIEP/Human-Falling-Detect-Tracks/yolov7/weight/yolov7-w6-pose.pt')
+model = yolov7_pose('./yolov7/weight/yolov7-w6-pose.pt')
 
+save_path = './outputs_data/ouput_create_2/pose_and_score.csv'
+annot_file = './datasets/dataset_create_2/annotation.csv'
+video_folder = './datasets/dataset_create_2/videos'
 
-
-save_path = '/media/ngocthien/DATA/DO_AN_TOT_NGHIEP/DATA/FallDataset/annot/pose_and_score_Home_02.csv'
-
-annot_file = '/media/ngocthien/DATA/DO_AN_TOT_NGHIEP/DATA/FallDataset/Home_02/Home_02.csv'
-video_folder = '/media/ngocthien/DATA/DO_AN_TOT_NGHIEP/DATA/FallDataset/Home_02/Videos'
+columns = ['video', 'frame', 'nose_x','nose_y','nose_s','left_eye_x','_left_eye_y','left_eye_s','right_eye_x','right_eye_y','right_eye_s','left_ear_x','left_ear_y','left_ear_s','right_ear_x','right_ear_y','right_ear_s','left_shoulder_x','left_shoulder_y','left_shoulder_s','right_shoulder_x','right_shoulder_y','right_shoulder_s','left_elbow_x','left_elbow_y','left_elbow_s','right_elbow_x','right_elbow_y','right_elbow_s','left_wrist_x','left_wrist_y','left_wrist_s','right_wrist_x','right_wrist_y','right_wrist_s','left_hip_x','left_hip_y','left_hip_s','right_hip_x','right_hip_y','right_hip_s','left_knee_x','left_knee_y','left_knee_s','right_knee_x','right_knee_y','right_knee_s','left_ankle_x','left_ankle_y','left_ankle_s','right_ankle_x','right_ankle_y','right_ankle_s','label']
+class_names = ['Standing','Stand up', 'Sitting','Sit down','Lying Down','Walking','Fall Down']
+frame_size = [640,640]
 
 def normalize_points_with_size(points_xy, width, height, flip=False):
     points_xy[:, 0] /= width
@@ -37,10 +38,9 @@ def normalize_points_with_size(points_xy, width, height, flip=False):
         points_xy[:, 0] = 1 - points_xy[:, 0]
     return points_xy
 
-def YL2XY(kpts,steps=3,thresh=0.3):
+def YL2XY(kpts,steps=3,thresh=0.01):
 
     result = np.zeros([17,3])
-
     cf = True
     num_kpts = len(kpts) // steps
     for kid in range(num_kpts):
@@ -48,7 +48,6 @@ def YL2XY(kpts,steps=3,thresh=0.3):
         if not (x_coord % 640 == 0 or y_coord % 640 == 0):
             if steps == 3:
                 conf = kpts[steps * kid + 2]
-
                 if (conf < thresh) and (kid in [5,6,11,12,13,14]):
                     cf = False
                 result[kid,0] = x_coord
@@ -56,8 +55,6 @@ def YL2XY(kpts,steps=3,thresh=0.3):
                 result[kid,2] = conf
     return result,cf
 
-columns = ['video', 'frame', 'nose_x','nose_y','nose_s','left_eye_x','_left_eye_y','left_eye_s','right_eye_x','right_eye_y','right_eye_s','left_ear_x','left_ear_y','left_ear_s','right_ear_x','right_ear_y','right_ear_s','left_shoulder_x','left_shoulder_y','left_shoulder_s','right_shoulder_x','right_shoulder_y','right_shoulder_s','left_elbow_x','left_elbow_y','left_elbow_s','right_elbow_x','right_elbow_y','right_elbow_s','left_wrist_x','left_wrist_y','left_wrist_s','right_wrist_x','right_wrist_y','right_wrist_s','left_hip_x','left_hip_y','left_hip_s','right_hip_x','right_hip_y','right_hip_s','left_knee_x','left_knee_y','left_knee_s','right_knee_x','right_knee_y','right_knee_s','left_ankle_x','left_ankle_y','left_ankle_s','right_ankle_x','right_ankle_y','right_ankle_s','label']
-class_names = ['Standing','Stand up', 'Sitting','Sit down','Lying Down','Walking','Fall Down']
 
 annot = pd.read_csv(annot_file)
 vid_list = annot['video'].unique()
@@ -71,8 +68,7 @@ for vid in vid_list:
 
     cap = cv2.VideoCapture(os.path.join(video_folder, vid))
     frames_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    frame_size = [640,640]
-
+    
     fps_time = 0
     i = 1
     while True:
@@ -83,7 +79,7 @@ for vid in vid_list:
             cls_idx = int(frames_label[frames_label['frame'] == i]['label'])
             
 
-            image,keypoints = model.predict(frame)
+            image,keypoints = model.predict1(frame)
             if keypoints.shape[0] > 0:
                 bb = np.array(keypoints[0,1:5])
                 result,cf = YL2XY(kpts=keypoints[0,6:],steps=3,thresh=0.01)
@@ -112,13 +108,11 @@ for vid in vid_list:
 
             df.loc[cur_row] = row
             cur_row += 1
-
-            
+            i += 1
             cv2.putText(img,vid+'   Frame:' +str(i),(10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255,0 ), 2)
-
             img = img[:, :, ::-1]
             fps_time = time.time()
-            i += 1
+            
 
             cv2.imshow('frame', img)
             key =cv2.waitKey(1)

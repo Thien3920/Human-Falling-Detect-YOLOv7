@@ -11,14 +11,14 @@ from torch.optim.adadelta import Adadelta
 from sklearn.model_selection import train_test_split
 
 from Actionsrecognition.Models import *
-from Visualizer import plot_graphs, plot_confusion_metrix
+from tools.Visualizer import plot_graphs, plot_confusion_metrix
 
 
 save_folder = './result/TSSTG(pts+mot)-01(cf+hm-hm)'
 
 device = 'cuda'
-epochs = 50
-batch_size = 700
+epochs = 1
+batch_size = 32
 
 # DATA FILES.
 # Should be in format of
@@ -32,8 +32,8 @@ batch_size = 700
 #   channels: Inputs data (x, y and scores), Default: 3
 #   num_class: Number of pose class to train, Default: 7
 
-data_files = ['./dataset/yolov7/train.pkl',
-              './dataset/yolov7/test.pkl']
+data_files = ['./dataset/data_train_no_flip/test.pkl',
+              './dataset/data_train_no_flip/test.pkl']
 
 class_names = ['Standing','Stand up', 'Sitting','Sit down','Lying Down','Walking','Fall Down']
 num_class = len(class_names)

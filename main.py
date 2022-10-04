@@ -1,15 +1,12 @@
-import os
-from tkinter import image_names
 import cv2
 import time
-import torch
 import numpy as np
 
 from tools.ActionsEstLoader import TSSTG
 from yolov7.pose import yolov7_pose
 model = yolov7_pose('./yolov7/weight/yolov7-w6-pose.pt')
 
-source ='/media/ngocthien/DATA/DO_AN_TOT_NGHIEP/DATA/FallDataset/Lecture_room/Lecture room/Lecture_room_video_(2).avi'
+source ='/media/ngocthien/DATA/DO_AN_TOT_NGHIEP/DATA/meger_2/videos/thien_cam2_2.mp4'
 
 
 def YL2XYS(kpts,steps=3):
@@ -35,6 +32,8 @@ if __name__ == '__main__':
     keypoints_list = []
     codec = cv2.VideoWriter_fourcc(*'MJPG')
     writer = cv2.VideoWriter('test.avi', codec, 30, (640, 640))
+    count_falldown = 0
+    thr = 15
     while True:
         ret,frame = cap.read()
         if ret:
@@ -51,6 +50,7 @@ if __name__ == '__main__':
             if miss >= 5:
                 keypoints_list = []
             action_name = "pending..."
+            color = (0, 255, 0)
             if len(keypoints_list) == 30:
                 pts = np.array(keypoints_list.copy(), dtype=np.float32)
                 out = action_model.predict(pts, frame.shape[:2])
@@ -58,9 +58,21 @@ if __name__ == '__main__':
                 action = '{}: {:.2f}%'.format(action_name, out[0].max() * 100)
                 count = 0
                 keypoints_list = keypoints_list[1:]
+            print(action_name)
+            if action_name =="Fall Down":
+                count_falldown+=1
+                if count_falldown < thr:
+                    action_name = buff_name
+                else:
+                    color = (0,0,255)
+            else:
+                count_falldown = 0
+                buff_name = action_name
+            
+            
             fps = 1/(time.time() - t_start)
-            cv2.putText(image, str(fps),(10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-            cv2.putText(image, str(action_name),(10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            cv2.putText(image, str(fps),(10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5,color , 1)
+            cv2.putText(image, str(action_name),(10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
 
             cv2.imshow('frame', image)
             writer.write(image)

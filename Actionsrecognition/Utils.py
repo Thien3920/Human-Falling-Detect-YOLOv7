@@ -20,7 +20,7 @@ class Graph:
         - dilation: (int) controls the spacing between the kernel points.
     """
     def __init__(self,
-                 layout='coco_cut',
+                 layout='coco',
                  strategy='uniform',
                  max_hop=3,
                  dilation=1):
@@ -32,18 +32,23 @@ class Graph:
         self.get_adjacency(strategy)
 
     def get_edge(self, layout):
-        if layout == 'coco_cut':
-            self.num_node = 18
-            # self.num_node = 14
+        if layout == 'coco':
+            self.num_node = 17
             self_link = [(i, i) for i in range(self.num_node)]
             neighbor_link = [(0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (5, 6),
                              (5, 7), (7, 9), (6, 8), (8, 10), (5, 11), (6, 12), (11, 12),
                              (11, 13), (13, 15), (12, 14), (14, 16)]
-            # neighbor_link = [(6, 4), (4, 2), (2, 13), (13, 1), (5, 3), (3, 1), (12, 10),
-            #                  (10, 8), (8, 2), (11, 9), (9, 7), (7, 1), (13, 0)]
             self.edge = self_link + neighbor_link
             self.center = 0
-            # self.center = 13
+
+        elif layout == 'coco_cut':
+            self.num_node = 14
+            self_link = [(i, i) for i in range(self.num_node)]
+          
+            neighbor_link = [(6, 4), (4, 2), (2, 13), (13, 1), (5, 3), (3, 1), (12, 10),
+                             (10, 8), (8, 2), (11, 9), (9, 7), (7, 1), (13, 0)]
+            self.edge = self_link + neighbor_link
+            self.center = 13
         else:
             raise ValueError('This layout is not supported!')
 
