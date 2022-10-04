@@ -60,8 +60,6 @@ if __name__ == '__main__':
                     continue
 
                 track_id = track.track_id
-                print(track_id)
-                print(type(track_id))
                 bbox = track.to_tlbr().astype(int)
 
                 action = 'pending..'
